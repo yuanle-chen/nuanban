@@ -1,0 +1,28 @@
+# Web framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# Database
+sqlalchemy==2.0.25
+pymysql==1.1.0
+cryptography==42.0.0
+
+# Auth
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+
+# Redis (optional, for caching)
+redis==5.0.1
+
+# HTTP client
+httpx==0.26.0
+
+# AI service (choose one)
+# wenxin-works==0.0.1  # Baidu Wenxin Yiyan
+# dashscope==1.14.0    # Alibaba Tongyi Qianwen
+
+# Utils
+python-dotenv==1.0.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
