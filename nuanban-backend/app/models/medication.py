@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, TIMESTAMP, Enum, ForeignKey, Boolean, JSON
+from sqlalchemy import Column, BigInteger, String, TIMESTAMP, ForeignKey, Boolean, JSON
 from sqlalchemy.sql import func
 from app.db.base import Base
 
@@ -6,8 +6,8 @@ from app.db.base import Base
 class MedicationPlan(Base):
     __tablename__ = "medication_plans"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, comment="计划ID")
-    elder_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="老人用户ID")
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="计划ID")
+    elder_user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, comment="老人用户ID")
     medication_name = Column(String(100), nullable=False, comment="药物名称")
     dosage = Column(String(50), nullable=False, comment="剂量")
     frequency = Column(String(50), nullable=False, comment="服用频率")
@@ -20,10 +20,10 @@ class MedicationPlan(Base):
 class MedicationLog(Base):
     __tablename__ = "medication_logs"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, comment="记录ID")
-    plan_id = Column(Integer, ForeignKey("medication_plans.id"), nullable=False, comment="计划ID")
-    elder_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="老人用户ID")
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="记录ID")
+    plan_id = Column(BigInteger, ForeignKey("medication_plans.id"), nullable=False, comment="计划ID")
+    elder_user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, comment="老人用户ID")
     scheduled_time = Column(String(10), nullable=False, comment="计划时间 HH:MM")
     taken_at = Column(TIMESTAMP, nullable=True, comment="实际服用时间")
-    status = Column(Enum("pending", "taken", "missed"), default="pending", comment="状态")
+    status = Column(String(20), default="pending", comment="状态")
     created_at = Column(TIMESTAMP, server_default=func.now())
