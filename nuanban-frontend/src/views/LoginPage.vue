@@ -59,7 +59,7 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user'
-import { login } from '../api/auth'
+import { login, getCurrentUser } from '../api/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -83,6 +83,9 @@ async function handleLogin() {
   try {
     const res: any = await login(form.value.username, form.value.password)
     userStore.setToken(res.access_token, role.value as string)
+    
+    const userRes: any = await getCurrentUser()
+    userStore.setUserInfo(userRes)
     
     if (role.value === 'elder') {
       router.push('/elder')

@@ -5,7 +5,7 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="text-blue-100 text-sm">下午好</p>
-          <h1 class="text-2xl font-bold mt-1">小张 👋</h1>
+          <h1 class="text-2xl font-bold mt-1">{{ userStore.userInfo?.username  }} 👋</h1>
         </div>
         <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl">
           👨
@@ -104,8 +104,10 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { useUserStore } from '../../stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 const features = [
   { name: '实时状态', icon: '📍', path: '/child/status' },
