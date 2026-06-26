@@ -114,8 +114,9 @@ const features = [
   { name: '健康报告', icon: '📊', path: '/child/report' },
   { name: '视频通话', icon: '📹', path: '/child' },
   { name: '用药设置', icon: '💊', path: '/child/settings' },
+  { name: '绑定老人', icon: '🔗', path: '/child/bind' },
+  { name: '老人档案', icon: '📋', path: '/child/profile' },
 ]
-
 function goTo(path: string) {
   router.push(path)
 }

@@ -19,6 +19,16 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="用户名已存在")
 
+    # 老人注册手机号必填
+    if user_data.role == "elder" and not user_data.phone:
+        raise HTTPException(status_code=400, detail="老人注册请填写手机号")
+
+    # 手机号唯一校验
+    if user_data.phone:
+        phone_existing = db.query(User).filter(User.phone == user_data.phone).first()
+        if phone_existing:
+            raise HTTPException(status_code=400, detail="该手机号已被注册")
+
     # 创建新用户
     hashed_password = get_password_hash(user_data.password)
     new_user = User(

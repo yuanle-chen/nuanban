@@ -123,3 +123,39 @@ def get_elder_profile(
     if not profile:
         raise HTTPException(status_code=404, detail="档案不存在")
     return profile
+
+
+# 子女通过手机号绑定老人
+@router.post("/bind-by-phone", response_model=FamilyRelationResponse)
+def bind_elder_by_phone(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "child":
+        raise HTTPException(status_code=403, detail="只有子女角色可以绑定老人")
+
+    phone = data.get("phone")
+    if not phone:
+        raise HTTPException(status_code=400, detail="请输入手机号")
+
+    elder = db.query(User).filter(User.phone == phone, User.role == "elder").first()
+    if not elder:
+        raise HTTPException(status_code=404, detail="未找到该手机号对应的老人账号")
+
+    existing = db.query(FamilyRelation).filter(
+        FamilyRelation.child_user_id == current_user.id,
+        FamilyRelation.elder_user_id == elder.id
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="已经绑定过该老人")
+
+    relation = FamilyRelation(
+        child_user_id=current_user.id,
+        elder_user_id=elder.id,
+        relation_type=data.get("relation_type", "子女")
+    )
+    db.add(relation)
+    db.commit()
+    db.refresh(relation)
+    return relation
