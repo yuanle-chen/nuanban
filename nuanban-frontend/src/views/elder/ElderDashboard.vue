@@ -81,6 +81,7 @@ const features = [
   { name: '用药提醒', icon: '💊', desc: '按时吃药', path: '/elder/medication' },
   { name: '紧急求助', icon: '🆘', desc: '一键呼救', path: '/elder/emergency' },
   { name: '视频通话', icon: '📹', desc: '见见家人', path: '/elder' },
+  { name: '健康记录', icon: '💚', path: '/elder/health' },
 ]
 
 function goTo(path: string) {

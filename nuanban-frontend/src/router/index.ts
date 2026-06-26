@@ -10,6 +10,11 @@ const routes = [
   { path: '/child/bind', name: 'BindElder', component: () => import('../views/child/BindElderPage.vue') },
   // 新增：老人档案页面
   { path: '/child/profile', name: 'ElderProfile', component: () => import('../views/child/ElderProfilePage.vue') },
+// 老人端 - 健康记录
+{ path: '/elder/health', name: 'ElderHealth', component: () => import('../views/elder/HealthRecordPage.vue') },
+// 子女端 - 健康报告
+{ path: '/child/report', name: 'ChildHealthReport', component: () => import('../views/child/HealthReportPage.vue') },
+
 ]
 
 const router = createRouter({
