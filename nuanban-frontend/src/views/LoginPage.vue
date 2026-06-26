@@ -82,6 +82,16 @@ async function handleLogin() {
   loading.value = true
   try {
     const res: any = await login(form.value.username, form.value.password)
+    
+    if (res.role !== role.value) {
+      userStore.logout()
+      const roleName = res.role === 'elder' ? '老人' : '子女'
+      const entryName = role.value === 'elder' ? '老人' : '子女'
+      alert(`该账号是${roleName}账号，请从${entryName}端登录`)
+      loading.value = false
+      return
+    }
+    
     userStore.setToken(res.access_token, role.value as string)
     
     const userRes: any = await getCurrentUser()

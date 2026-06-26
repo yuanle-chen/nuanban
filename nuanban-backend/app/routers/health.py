@@ -49,6 +49,10 @@ def get_health_summary(
 ):
     types = ["blood_pressure", "heart_rate", "blood_sugar", "weight", "sleep"]
     summary = HealthSummary()
+    summary.status = "全部正常"
+
+    has_any_data = False
+    has_abnormal = False
 
     for t in types:
         latest = db.query(HealthRecord).filter(
@@ -57,15 +61,50 @@ def get_health_summary(
         ).order_by(HealthRecord.recorded_at.desc()).first()
 
         if latest:
+            has_any_data = True
+            is_abnormal = False
+
             if t == "blood_pressure":
                 summary.latest_blood_pressure = latest.value
+                try:
+                    parts = latest.value.split('/')
+                    high = int(parts[0])
+                    low = int(parts[1])
+                    if high < 90 or high > 140 or low < 60 or low > 90:
+                        is_abnormal = True
+                except:
+                    pass
             elif t == "heart_rate":
                 summary.latest_heart_rate = latest.value
+                try:
+                    rate = int(latest.value)
+                    if rate < 60 or rate > 100:
+                        is_abnormal = True
+                except:
+                    pass
             elif t == "blood_sugar":
                 summary.latest_blood_sugar = latest.value
+                try:
+                    sugar = float(latest.value)
+                    if sugar < 3.9 or sugar > 6.1:
+                        is_abnormal = True
+                except:
+                    pass
             elif t == "weight":
                 summary.latest_weight = latest.value
             elif t == "sleep":
                 summary.latest_sleep = latest.value
+                try:
+                    hours = float(latest.value)
+                    if hours < 6 or hours > 10:
+                        is_abnormal = True
+                except:
+                    pass
+
+            if is_abnormal:
+                has_abnormal = True
+
+    if has_any_data and has_abnormal:
+        summary.status = "存在异常"
 
     return summary

@@ -34,16 +34,34 @@
             <p class="text-2xl mb-1">🩺</p>
             <p class="text-lg font-bold text-gray-800">{{ summary.latest_blood_pressure || '--' }}</p>
             <p class="text-xs text-gray-500">血压</p>
+            <span v-if="summary.latest_blood_pressure" :class="[
+              'inline-block mt-1 px-2 py-0.5 rounded-full text-xs',
+              checkBloodPressure(summary.latest_blood_pressure) ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+            ]">
+              {{ checkBloodPressure(summary.latest_blood_pressure) ? '正常' : '异常' }}
+            </span>
           </div>
           <div class="p-3 bg-gray-50 rounded-xl">
             <p class="text-2xl mb-1">❤️</p>
             <p class="text-lg font-bold text-gray-800">{{ summary.latest_heart_rate || '--' }}</p>
             <p class="text-xs text-gray-500">心率</p>
+            <span v-if="summary.latest_heart_rate" :class="[
+              'inline-block mt-1 px-2 py-0.5 rounded-full text-xs',
+              checkHeartRate(summary.latest_heart_rate) ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+            ]">
+              {{ checkHeartRate(summary.latest_heart_rate) ? '正常' : '异常' }}
+            </span>
           </div>
           <div class="p-3 bg-gray-50 rounded-xl">
             <p class="text-2xl mb-1">🩸</p>
             <p class="text-lg font-bold text-gray-800">{{ summary.latest_blood_sugar || '--' }}</p>
             <p class="text-xs text-gray-500">血糖</p>
+            <span v-if="summary.latest_blood_sugar" :class="[
+              'inline-block mt-1 px-2 py-0.5 rounded-full text-xs',
+              checkBloodSugar(summary.latest_blood_sugar) ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+            ]">
+              {{ checkBloodSugar(summary.latest_blood_sugar) ? '正常' : '异常' }}
+            </span>
           </div>
           <div class="p-3 bg-gray-50 rounded-xl">
             <p class="text-2xl mb-1">⚖️</p>
@@ -54,6 +72,12 @@
             <p class="text-2xl mb-1">😴</p>
             <p class="text-lg font-bold text-gray-800">{{ summary.latest_sleep || '--' }}</p>
             <p class="text-xs text-gray-500">睡眠</p>
+            <span v-if="summary.latest_sleep" :class="[
+              'inline-block mt-1 px-2 py-0.5 rounded-full text-xs',
+              checkSleep(summary.latest_sleep) ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+            ]">
+              {{ checkSleep(summary.latest_sleep) ? '正常' : '异常' }}
+            </span>
           </div>
         </div>
       </div>
@@ -94,7 +118,18 @@
                 <p class="text-xs text-gray-400">{{ formatTime(record.recorded_at) }}</p>
               </div>
             </div>
-            <p class="font-semibold text-blue-600">{{ record.value }}</p>
+            <div class="flex items-center gap-2">
+              <span
+                v-if="hasStatus(record.record_type)"
+                :class="[
+                  'px-2 py-0.5 rounded-full text-xs',
+                  checkRecordStatus(record.record_type, record.value) ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                ]"
+              >
+                {{ checkRecordStatus(record.record_type, record.value) ? '正常' : '异常' }}
+              </span>
+              <p class="font-semibold text-blue-600">{{ record.value }}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -142,6 +177,63 @@ function getTypeName(type: string) {
 function formatTime(time: string) {
   const d = new Date(time)
   return `${d.getMonth() + 1}月${d.getDate()}日 ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function checkBloodPressure(value: string): boolean {
+  try {
+    const parts = value.split('/')
+    const high = parseInt(parts[0])
+    const low = parseInt(parts[1])
+    return high >= 90 && high <= 140 && low >= 60 && low <= 90
+  } catch {
+    return true
+  }
+}
+
+function checkHeartRate(value: string): boolean {
+  try {
+    const rate = parseInt(value)
+    return rate >= 60 && rate <= 100
+  } catch {
+    return true
+  }
+}
+
+function checkBloodSugar(value: string): boolean {
+  try {
+    const sugar = parseFloat(value)
+    return sugar >= 3.9 && sugar <= 6.1
+  } catch {
+    return true
+  }
+}
+
+function checkSleep(value: string): boolean {
+  try {
+    const hours = parseFloat(value)
+    return hours >= 6 && hours <= 10
+  } catch {
+    return true
+  }
+}
+
+function hasStatus(type: string): boolean {
+  return ['blood_pressure', 'heart_rate', 'blood_sugar', 'sleep'].includes(type)
+}
+
+function checkRecordStatus(type: string, value: string): boolean {
+  switch (type) {
+    case 'blood_pressure':
+      return checkBloodPressure(value)
+    case 'heart_rate':
+      return checkHeartRate(value)
+    case 'blood_sugar':
+      return checkBloodSugar(value)
+    case 'sleep':
+      return checkSleep(value)
+    default:
+      return true
+  }
 }
 
 async function loadSummary() {
