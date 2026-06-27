@@ -22,6 +22,8 @@ const routes = [
 { path: '/elder/emergency', name: 'ElderEmergency', component: () => import('../views/elder/EmergencyPage.vue') },
 // 子女端 - 紧急求助列表
 { path: '/child/alerts', name: 'ChildAlerts', component: () => import('../views/child/EmergencyAlertsPage.vue') },
+// 老人端 - AI聊天
+{ path: '/elder/chat', name: 'ElderChat', component: () => import('../views/elder/ChatPage.vue') },
 
 ]
 
