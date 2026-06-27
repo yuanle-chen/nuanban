@@ -14,6 +14,10 @@ const routes = [
 { path: '/elder/health', name: 'ElderHealth', component: () => import('../views/elder/HealthRecordPage.vue') },
 // 子女端 - 健康报告
 { path: '/child/report', name: 'ChildHealthReport', component: () => import('../views/child/HealthReportPage.vue') },
+// 老人端 - 用药提醒
+{ path: '/elder/medication', name: 'ElderMedication', component: () => import('../views/elder/MedicationPage.vue') },
+// 子女端 - 用药设置
+{ path: '/child/medication', name: 'ChildMedication', component: () => import('../views/child/MedicationSettingsPage.vue') },
 
 ]
 

@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+from datetime import datetime, date
 from app.db.session import get_db
 from app.models.user import User
 from app.models.family import FamilyRelation, ElderProfile
+from app.models.medication import MedicationLog, MedicationPlan
+from app.models.health import HealthRecord
 from app.schemas.family import (
     FamilyRelationCreate, FamilyRelationResponse,
     ElderProfileCreate, ElderProfileUpdate,
@@ -159,3 +162,64 @@ def bind_elder_by_phone(
     db.commit()
     db.refresh(relation)
     return relation
+
+
+# 获取综合提醒（用药+健康）
+@router.get("/alerts/{elder_user_id}")
+def get_elder_alerts(
+    elder_user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    today = date.today()
+
+    medication_logs = db.query(MedicationLog).filter(
+        MedicationLog.elder_user_id == elder_user_id,
+        MedicationLog.created_at >= datetime.combine(today, datetime.min.time())
+    ).order_by(MedicationLog.created_at.desc()).all()
+
+    health_records = db.query(HealthRecord).filter(
+        HealthRecord.elder_user_id == elder_user_id,
+        HealthRecord.recorded_at >= datetime.combine(today, datetime.min.time())
+    ).order_by(HealthRecord.recorded_at.desc()).all()
+
+    alerts = []
+
+    for log in medication_logs:
+        plan = db.query(MedicationPlan).filter(MedicationPlan.id == log.plan_id).first()
+        if plan:
+            alerts.append({
+                "type": "medication",
+                "icon": "💊",
+                "title": f"已服用{plan.medication_name}",
+                "content": f"今日已服用{plan.medication_name}",
+                "time": log.taken_at.strftime("%H:%M") if log.taken_at else log.created_at.strftime("%H:%M"),
+                "created_at": log.created_at
+            })
+
+    for record in health_records:
+        type_name = {
+            "blood_pressure": "血压",
+            "heart_rate": "心率",
+            "blood_sugar": "血糖",
+            "weight": "体重",
+            "sleep": "睡眠"
+        }.get(record.record_type, record.record_type)
+
+        alerts.append({
+            "type": "health",
+            "icon": {
+                "blood_pressure": "🩺",
+                "heart_rate": "❤️",
+                "blood_sugar": "🩸",
+                "weight": "⚖️",
+                "sleep": "😴"
+            }.get(record.record_type, "📊"),
+            "title": f"记录{type_name}",
+            "content": f"{type_name}：{record.value}",
+            "time": record.recorded_at.strftime("%H:%M"),
+            "created_at": record.recorded_at
+        })
+
+    alerts.sort(key=lambda x: x["created_at"], reverse=True)
+    return alerts[:10]

@@ -38,3 +38,7 @@ export function updateElderProfile(userId: number, data: {
 }) {
   return request.put(`/family/profile/${userId}`, data)
 }
+
+export function getElderAlerts(elderUserId: number) {
+  return request.get(`/family/alerts/${elderUserId}`)
+}
