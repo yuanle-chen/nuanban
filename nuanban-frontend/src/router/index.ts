@@ -18,6 +18,10 @@ const routes = [
 { path: '/elder/medication', name: 'ElderMedication', component: () => import('../views/elder/MedicationPage.vue') },
 // 子女端 - 用药设置
 { path: '/child/medication', name: 'ChildMedication', component: () => import('../views/child/MedicationSettingsPage.vue') },
+// 老人端 - 紧急求助
+{ path: '/elder/emergency', name: 'ElderEmergency', component: () => import('../views/elder/EmergencyPage.vue') },
+// 子女端 - 紧急求助列表
+{ path: '/child/alerts', name: 'ChildAlerts', component: () => import('../views/child/EmergencyAlertsPage.vue') },
 
 ]
 
