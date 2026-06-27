@@ -61,7 +61,7 @@
         <div class="text-2xl">🆘</div>
         <p class="text-xs mt-1">求助</p>
       </div>
-      <div class="text-gray-400 text-center">
+      <div @click="goTo('/elder/profile')" class="text-gray-400 text-center cursor-pointer">
         <div class="text-2xl">👤</div>
         <p class="text-xs mt-1">我的</p>
       </div>

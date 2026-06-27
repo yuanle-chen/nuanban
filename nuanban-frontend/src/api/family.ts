@@ -42,3 +42,7 @@ export function updateElderProfile(userId: number, data: {
 export function getElderAlerts(elderUserId: number) {
   return request.get(`/family/alerts/${elderUserId}`)
 }
+
+export function unbindElder(elderUserId: number) {
+  return request.delete(`/family/unbind/${elderUserId}`)
+}

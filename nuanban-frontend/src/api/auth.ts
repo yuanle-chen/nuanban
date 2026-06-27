@@ -14,3 +14,10 @@ export function register(data: { username: string; password: string; role: strin
 export function getCurrentUser() {
   return request.get('/auth/me')
 }
+
+export function changePassword(oldPassword: string, newPassword: string) {
+  return request.post('/auth/change-password', {
+    old_password: oldPassword,
+    new_password: newPassword
+  })
+}

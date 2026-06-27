@@ -24,6 +24,12 @@ const routes = [
 { path: '/child/alerts', name: 'ChildAlerts', component: () => import('../views/child/EmergencyAlertsPage.vue') },
 // 老人端 - AI聊天
 { path: '/elder/chat', name: 'ElderChat', component: () => import('../views/elder/ChatPage.vue') },
+// 老人端 - 个人中心
+{ path: '/elder/profile', name: 'ElderProfilePage', component: () => import('../views/elder/ElderProfilePage.vue') },
+// 子女端 - 设置
+{ path: '/child/settings', name: 'ChildSettings', component: () => import('../views/child/SettingsPage.vue') },
+// 子女端 - 实时状态
+{ path: '/child/status', name: 'ChildStatus', component: () => import('../views/child/StatusPage.vue') },
 
 ]
 

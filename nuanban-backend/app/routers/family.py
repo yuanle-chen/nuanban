@@ -77,6 +77,30 @@ def get_my_elders(
     return result
 
 
+# 子女解绑老人
+@router.delete("/unbind/{elder_user_id}")
+def unbind_elder(
+    elder_user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "child":
+        raise HTTPException(status_code=403, detail="只有子女角色可以解绑")
+
+    relation = db.query(FamilyRelation).filter(
+        FamilyRelation.child_user_id == current_user.id,
+        FamilyRelation.elder_user_id == elder_user_id
+    ).first()
+
+    if not relation:
+        raise HTTPException(status_code=404, detail="未找到绑定关系")
+
+    db.delete(relation)
+    db.commit()
+
+    return {"message": "解绑成功"}
+
+
 # 创建/更新老人档案
 @router.post("/profile", response_model=ElderProfileResponse)
 def create_elder_profile(

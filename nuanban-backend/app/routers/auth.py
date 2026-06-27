@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, Token
+from app.schemas.user import UserCreate, UserResponse, Token, PasswordChange
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.config import settings
 from app.dependencies import get_current_user
@@ -62,3 +62,20 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.post("/change-password")
+def change_password(
+    data: PasswordChange,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # 验证旧密码
+    if not verify_password(data.old_password, current_user.password):
+        raise HTTPException(status_code=400, detail="原密码错误")
+
+    # 更新新密码
+    current_user.password = get_password_hash(data.new_password)
+    db.commit()
+
+    return {"message": "密码修改成功"}
