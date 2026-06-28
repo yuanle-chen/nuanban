@@ -154,3 +154,38 @@ CREATE TABLE IF NOT EXISTS notification_logs (
     INDEX idx_user_read (user_id, is_read),
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知记录表';
+
+-- =============================================
+-- 10. 验证码表
+-- =============================================
+CREATE TABLE IF NOT EXISTS verification_codes (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '记录ID',
+    phone VARCHAR(20) NOT NULL COMMENT '手机号',
+    code VARCHAR(10) NOT NULL COMMENT '验证码',
+    purpose VARCHAR(20) DEFAULT 'reset_password' COMMENT '用途：reset_password=找回密码',
+    is_used BOOLEAN DEFAULT FALSE COMMENT '是否已使用',
+    expires_at TIMESTAMP NOT NULL COMMENT '过期时间',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX idx_phone (phone),
+    INDEX idx_code (code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='验证码表';
+
+-- =============================================
+-- 11. 视频通话记录表
+-- =============================================
+CREATE TABLE IF NOT EXISTS video_calls (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '记录ID',
+    caller_id BIGINT NOT NULL COMMENT '发起人ID',
+    receiver_id BIGINT NOT NULL COMMENT '接收人ID',
+    status VARCHAR(20) DEFAULT 'calling' COMMENT '状态：calling=呼叫中, connected=已接通, ended=已结束, missed=未接通',
+    duration INT DEFAULT 0 COMMENT '通话时长（秒）',
+    room_id VARCHAR(50) COMMENT '房间号',
+    started_at TIMESTAMP NULL COMMENT '开始时间',
+    ended_at TIMESTAMP NULL COMMENT '结束时间',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    FOREIGN KEY (caller_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_caller (caller_id),
+    INDEX idx_receiver (receiver_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='视频通话记录表';

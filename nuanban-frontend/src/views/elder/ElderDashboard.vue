@@ -71,7 +71,9 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '../../stores/user'
+import { getPendingCalls } from '../../api/videoCall'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -80,11 +82,44 @@ const features = [
   { name: '智能聊天', icon: '💬', desc: '陪您说说话', path: '/elder/chat' },
   { name: '用药提醒', icon: '💊', desc: '按时吃药', path: '/elder/medication' },
   { name: '紧急求助', icon: '🆘', desc: '一键呼救', path: '/elder/emergency' },
-  { name: '视频通话', icon: '📹', desc: '见见家人', path: '/elder' },
+  { name: '视频通话', icon: '📹', desc: '见见家人', path: '/elder/video-call' },
   { name: '健康记录', icon: '💚', path: '/elder/health' },
 ]
 
 function goTo(path: string) {
   router.push(path)
 }
+
+let pollTimer: ReturnType<typeof setInterval> | null = null
+
+async function checkIncomingCalls() {
+  try {
+    const calls: any = await getPendingCalls()
+    if (calls && calls.length > 0) {
+      const call = calls[0]
+      router.push({
+        path: '/elder/video-call',
+        query: {
+          incoming: 'true',
+          call_id: call.id,
+          name: call.caller_name || '家人'
+        }
+      })
+    }
+  } catch (err) {
+    console.error('检查来电失败', err)
+  }
+}
+
+onMounted(() => {
+  checkIncomingCalls()
+  pollTimer = setInterval(checkIncomingCalls, 5000)
+})
+
+onUnmounted(() => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+})
 </script>

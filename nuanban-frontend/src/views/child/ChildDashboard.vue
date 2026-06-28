@@ -47,7 +47,7 @@
         <div
           v-for="item in features"
           :key="item.name"
-          @click="goTo(item.path)"
+          @click="goTo(item.path, item.action)"
           class="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer text-center"
         >
           <div class="text-3xl mb-2">{{ item.icon }}</div>
@@ -106,13 +106,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useFamilyStore } from '../../stores/family'
 import { getElderAlerts } from '../../api/family'
 import { getHealthSummary } from '../../api/health'
 import { getTodayMedication } from '../../api/medication'
+import { getPendingCalls } from '../../api/videoCall'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -139,12 +140,23 @@ const medicationProgress = computed(() => {
 const features = [
   { name: '实时状态', icon: '📍', path: '/child/status' },
   { name: '健康报告', icon: '📊', path: '/child/report' },
-  { name: '视频通话', icon: '📹', path: '/child' },
+  { name: '视频通话', icon: '📹', path: '/child/video-call', action: 'video' },
   { name: '用药设置', icon: '💊', path: '/child/medication' },
 ]
 
-function goTo(path: string) {
-  router.push(path)
+function goTo(path: string, action?: string) {
+  if (action === 'video') {
+    if (!elderId.value) {
+      alert('请先绑定老人')
+      return
+    }
+    router.push({
+      path: '/child/video-call',
+      query: { elder_id: elderId.value, name: elderName.value }
+    })
+  } else {
+    router.push(path)
+  }
 }
 
 function getAlertBgClass(type: string) {
@@ -167,10 +179,40 @@ async function loadData() {
   }
 }
 
+let pollTimer: ReturnType<typeof setInterval> | null = null
+
+async function checkIncomingCalls() {
+  try {
+    const calls: any = await getPendingCalls()
+    if (calls && calls.length > 0) {
+      const call = calls[0]
+      router.push({
+        path: '/child/video-call',
+        query: {
+          incoming: 'true',
+          call_id: call.id,
+          name: call.caller_name || '老人'
+        }
+      })
+    }
+  } catch (err) {
+    console.error('检查来电失败', err)
+  }
+}
+
 onMounted(async () => {
   if (!familyStore.currentElder) {
     await familyStore.fetchElders()
   }
   loadData()
+  checkIncomingCalls()
+  pollTimer = setInterval(checkIncomingCalls, 5000)
+})
+
+onUnmounted(() => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
 })
 </script>

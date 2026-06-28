@@ -32,6 +32,10 @@ const routes = [
 { path: '/child/status', name: 'ChildStatus', component: () => import('../views/child/StatusPage.vue') },
 // 忘记密码
 { path: '/forgot-password', name: 'ForgotPassword', component: () => import('../views/ForgotPasswordPage.vue') },
+// 子女端 - 视频通话
+{ path: '/child/video-call', name: 'ChildVideoCall', component: () => import('../views/child/VideoCallPage.vue') },
+// 老人端 - 视频通话
+{ path: '/elder/video-call', name: 'ElderVideoCall', component: () => import('../views/elder/VideoCallPage.vue') },
 
 ]
 

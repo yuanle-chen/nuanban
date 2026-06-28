@@ -12,6 +12,10 @@ export function getMyElders() {
   return request.get('/family/elders')
 }
 
+export function getMyChildren() {
+  return request.get('/family/children')
+}
+
 export function getElderProfile(userId: number) {
   return request.get(`/family/profile/${userId}`)
 }

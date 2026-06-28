@@ -77,6 +77,33 @@ def get_my_elders(
     return result
 
 
+# 老人查看绑定的子女列表
+@router.get("/children")
+def get_my_children(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "elder":
+        raise HTTPException(status_code=403, detail="只有老人角色可以查看")
+
+    relations = db.query(FamilyRelation).filter(
+        FamilyRelation.elder_user_id == current_user.id
+    ).all()
+
+    result = []
+    for rel in relations:
+        child = db.query(User).filter(User.id == rel.child_user_id).first()
+        if child:
+            result.append({
+                "id": child.id,
+                "username": child.username,
+                "phone": child.phone,
+                "role": child.role,
+                "relation_type": rel.relation_type
+            })
+    return result
+
+
 # 子女解绑老人
 @router.delete("/unbind/{elder_user_id}")
 def unbind_elder(
