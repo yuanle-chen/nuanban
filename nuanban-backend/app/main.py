@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, family, health, medication, emergency, chat  # ← 加导入
+from app.routers import auth, family, health, medication, emergency, chat, verification  # ← 加导入
 
 app = FastAPI(
     title="暖伴 · 智能陪伴机器人 API",
@@ -23,6 +23,7 @@ app.include_router(health.router)
 app.include_router(medication.router)
 app.include_router(emergency.router)
 app.include_router(chat.router)
+app.include_router(verification.router)
 
 @app.get("/")
 def root():

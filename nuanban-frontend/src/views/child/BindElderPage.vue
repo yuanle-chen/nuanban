@@ -86,10 +86,11 @@ async function handleBind() {
 
   loading.value = true
   try {
-    await bindElderByPhone(elderPhone.value, relationType.value)
-    alert('绑定成功！')
+    const res: any = await bindElderByPhone(elderPhone.value, relationType.value)
+    alert('绑定成功！请填写老人档案信息')
     await familyStore.fetchElders()
-    router.back()
+    // 绑定成功后跳转到档案填写页面
+    router.push({ path: '/child/profile', query: { id: res.elder_user_id || res.id } })
   } catch (err: any) {
     alert(err.response?.data?.detail || '绑定失败')
   } finally {

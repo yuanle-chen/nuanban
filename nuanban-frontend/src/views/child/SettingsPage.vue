@@ -41,7 +41,7 @@
             :key="elder.id"
             class="p-4 flex items-center justify-between"
           >
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 cursor-pointer" @click="goToProfile(elder)">
               <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-xl">
                 👵
               </div>
@@ -284,6 +284,10 @@ async function loadData() {
 
 function goTo(path: string) {
   router.push(path)
+}
+
+function goToProfile(elder: any) {
+  router.push({ path: '/child/profile', query: { id: elder.id } })
 }
 
 function switchElder(elder: any) {

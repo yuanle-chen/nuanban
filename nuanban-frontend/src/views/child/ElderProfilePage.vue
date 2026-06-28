@@ -11,14 +11,14 @@
           👴
         </div>
         <div>
-          <h2 class="text-xl font-bold">{{ currentElder?.profile?.real_name || currentElder?.username || '加载中...' }}</h2>
-          <p class="text-white/80 text-sm">{{ currentElder?.relation_type || '子女' }}</p>
+          <h2 class="text-xl font-bold">{{ elderInfo?.profile?.real_name || elderInfo?.username || '加载中...' }}</h2>
+          <p class="text-white/80 text-sm">{{ elderInfo?.phone || '' }}</p>
         </div>
       </div>
     </div>
 
     <!-- 档案表单 -->
-    <div class="px-4 -mt-8">
+    <div class="px-4 -mt-8 pb-8">
       <div class="bg-white rounded-2xl p-6 shadow-lg">
         <div class="space-y-4">
           <div>
@@ -102,14 +102,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useFamilyStore } from '../../stores/family'
 import { createElderProfile, updateElderProfile, getElderProfile } from '../../api/family'
 
+const route = useRoute()
+const router = useRouter()
 const familyStore = useFamilyStore()
-const currentElder = computed(() => familyStore.currentElder)
 
 const loading = ref(false)
+const elderInfo = ref<any>(null)
+const hasProfile = ref(false)
+
 const form = ref({
   real_name: '',
   age: undefined as number | undefined,
@@ -119,48 +124,84 @@ const form = ref({
   emergency_phone: '',
 })
 
-onMounted(async () => {
-  if (!currentElder.value) {
+const elderUserId = computed(() => {
+  const id = route.query.id
+  if (id) return Number(id)
+  return familyStore.currentElder?.id
+})
+
+async function loadElderInfo() {
+  if (!elderUserId.value) return
+
+  // 尝试从 familyStore 中找老人信息
+  let elder = familyStore.elders.find((e: any) => e.id === elderUserId.value)
+  if (elder) {
+    elderInfo.value = elder
+  } else {
+    // 如果找不到，先拉取列表
     await familyStore.fetchElders()
-  }
-  if (currentElder.value?.profile) {
-    form.value = {
-      real_name: currentElder.value.profile.real_name || '',
-      age: currentElder.value.profile.age,
-      gender: currentElder.value.profile.gender || '',
-      address: currentElder.value.profile.address || '',
-      emergency_contact: currentElder.value.profile.emergency_contact || '',
-      emergency_phone: currentElder.value.profile.emergency_phone || '',
+    elder = familyStore.elders.find((e: any) => e.id === elderUserId.value)
+    if (elder) {
+      elderInfo.value = elder
     }
   }
-})
+
+  // 加载档案
+  try {
+    const profile: any = await getElderProfile(elderUserId.value)
+    hasProfile.value = true
+    form.value = {
+      real_name: profile.real_name || '',
+      age: profile.age,
+      gender: profile.gender || '',
+      address: profile.address || '',
+      emergency_contact: profile.emergency_contact || '',
+      emergency_phone: profile.emergency_phone || '',
+    }
+    // 更新 elderInfo 的 profile
+    if (elderInfo.value) {
+      elderInfo.value.profile = profile
+    }
+  } catch (e) {
+    hasProfile.value = false
+    // 档案不存在，用老人的用户名作为默认姓名
+    if (elderInfo.value) {
+      form.value.real_name = elderInfo.value.username || ''
+    }
+  }
+}
 
 async function handleSave() {
   if (!form.value.real_name) {
     alert('请输入真实姓名')
     return
   }
-  if (!currentElder.value) {
-    alert('请先绑定老人')
+  if (!elderUserId.value) {
+    alert('缺少老人ID')
     return
   }
 
   loading.value = true
   try {
-    if (currentElder.value.profile) {
-      await updateElderProfile(currentElder.value.id, form.value)
+    if (hasProfile.value) {
+      await updateElderProfile(elderUserId.value, form.value)
     } else {
       await createElderProfile({
-        user_id: currentElder.value.id,
+        user_id: elderUserId.value,
         ...form.value,
       })
     }
     alert('保存成功！')
     await familyStore.fetchElders()
+    router.back()
   } catch (err: any) {
     alert(err.response?.data?.detail || '保存失败')
   } finally {
     loading.value = false
   }
 }
+
+onMounted(() => {
+  loadElderInfo()
+})
 </script>

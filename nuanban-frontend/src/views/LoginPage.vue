@@ -44,6 +44,13 @@
           {{ loading ? '登录中...' : '登 录' }}
         </button>
 
+        <div class="flex justify-between items-center text-sm">
+          <span></span>
+          <button @click="goToForgotPassword" class="text-orange-500 hover:text-orange-600">
+            忘记密码？
+          </button>
+        </div>
+
         <div class="text-center text-sm text-gray-500">
           还没有账号？
           <button @click="goToRegister" class="text-orange-500 hover:text-orange-600 font-medium">
@@ -111,5 +118,9 @@ async function handleLogin() {
 
 function goToRegister() {
   router.push({ path: '/register', query: { role: role.value } })
+}
+
+function goToForgotPassword() {
+  router.push('/forgot-password')
 }
 </script>

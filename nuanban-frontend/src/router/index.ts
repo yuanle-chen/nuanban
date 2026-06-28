@@ -30,6 +30,8 @@ const routes = [
 { path: '/child/settings', name: 'ChildSettings', component: () => import('../views/child/SettingsPage.vue') },
 // 子女端 - 实时状态
 { path: '/child/status', name: 'ChildStatus', component: () => import('../views/child/StatusPage.vue') },
+// 忘记密码
+{ path: '/forgot-password', name: 'ForgotPassword', component: () => import('../views/ForgotPasswordPage.vue') },
 
 ]
 

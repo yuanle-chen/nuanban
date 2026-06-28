@@ -21,3 +21,15 @@ export function changePassword(oldPassword: string, newPassword: string) {
     new_password: newPassword
   })
 }
+
+export function sendCode(phone: string) {
+  return request.post('/auth/send-code', { phone })
+}
+
+export function resetPassword(phone: string, code: string, newPassword: string) {
+  return request.post('/auth/reset-password', {
+    phone,
+    code,
+    new_password: newPassword
+  })
+}
