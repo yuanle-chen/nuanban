@@ -122,6 +122,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { acceptCall, endCall, getPendingCalls, startVideoCall, getCallHistory } from '../../api/videoCall'
 import { useFamilyStore } from '../../stores/family'
+import { speak, stopSpeaking } from '../../utils/speech'
 
 const router = useRouter()
 const route = useRoute()
@@ -175,6 +176,7 @@ async function handleStartCall(child: any) {
 async function handleAccept() {
   if (!callId.value) return
   try {
+    stopSpeaking()
     await acceptCall(callId.value)
     callStatus.value = 'connected'
     startDurationTimer()
@@ -185,6 +187,7 @@ async function handleAccept() {
 }
 
 async function handleReject() {
+  stopSpeaking()
   if (callId.value) {
     try {
       await endCall(callId.value)
@@ -269,6 +272,7 @@ async function checkIncoming() {
       isIncoming.value = true
       childName.value = call.caller_name || '子女'
       callStatus.value = 'calling'
+      speak(`${call.caller_name || '子女'}发来视频通话，请接听`)
       pollCallStatus()
     }
   } catch (err) {
@@ -284,6 +288,7 @@ onMounted(async () => {
   if (isIncoming.value && incomingCallId) {
     callId.value = incomingCallId
     callStatus.value = 'calling'
+    speak(`${childName.value}发来视频通话，请接听`)
     pollCallStatus()
   } else {
     try {

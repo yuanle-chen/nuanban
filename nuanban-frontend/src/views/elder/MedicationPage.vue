@@ -105,6 +105,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '../../stores/user'
 import { getTodayMedication, takeMedication } from '../../api/medication'
+import { speak } from '../../utils/speech'
 
 const userStore = useUserStore()
 const todayList = ref<any[]>([])
@@ -153,6 +154,7 @@ function checkTime() {
     if (item.status !== 'taken' && item.scheduled_time === timeStr && !showAlert.value) {
       alertItem.value = item
       showAlert.value = true
+      speak(`该吃${item.medication_name}了，${item.dosage}，${item.frequency || '请遵医嘱'}`)
       break
     }
   }

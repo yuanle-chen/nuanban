@@ -71,9 +71,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '../../stores/user'
-import { getPendingCalls } from '../../api/videoCall'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -89,37 +87,4 @@ const features = [
 function goTo(path: string) {
   router.push(path)
 }
-
-let pollTimer: ReturnType<typeof setInterval> | null = null
-
-async function checkIncomingCalls() {
-  try {
-    const calls: any = await getPendingCalls()
-    if (calls && calls.length > 0) {
-      const call = calls[0]
-      router.push({
-        path: '/elder/video-call',
-        query: {
-          incoming: 'true',
-          call_id: call.id,
-          name: call.caller_name || '家人'
-        }
-      })
-    }
-  } catch (err) {
-    console.error('检查来电失败', err)
-  }
-}
-
-onMounted(() => {
-  checkIncomingCalls()
-  pollTimer = setInterval(checkIncomingCalls, 5000)
-})
-
-onUnmounted(() => {
-  if (pollTimer) {
-    clearInterval(pollTimer)
-    pollTimer = null
-  }
-})
 </script>

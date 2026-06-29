@@ -1,6 +1,41 @@
 <template>
   <router-view />
 
+  <!-- 全局视频通话来电弹窗 -->
+  <div
+    v-if="videoCallStore.incomingCall"
+    class="fixed inset-0 z-[9998] flex items-center justify-center bg-black/70"
+  >
+    <div class="bg-gray-900 rounded-3xl p-8 w-80 text-center">
+      <div class="text-6xl mb-4 animate-bounce">
+        {{ userStore.userInfo?.role === 'elder' ? '👩' : '👴' }}
+      </div>
+      <h2 class="text-xl font-bold text-white mb-2">
+        {{ videoCallStore.incomingCall.caller_name || '家人' }}
+      </h2>
+      <p class="text-gray-400 mb-8">发来视频通话</p>
+
+      <div class="flex justify-around">
+        <button
+          @click="rejectCall"
+          class="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center text-2xl shadow-lg active:scale-95 transition-transform"
+        >
+          📞
+        </button>
+        <button
+          @click="acceptCall"
+          class="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center text-2xl shadow-lg active:scale-95 transition-transform animate-bounce"
+        >
+          📞
+        </button>
+      </div>
+      <div class="flex justify-around mt-3">
+        <span class="text-red-400 text-sm">挂断</span>
+        <span class="text-green-400 text-sm">接听</span>
+      </div>
+    </div>
+  </div>
+
   <!-- 全局用药提醒弹窗（仅老人端显示） -->
   <div
     v-if="showMedAlert && medAlertItem && userStore.userInfo?.role === 'elder'"
@@ -71,24 +106,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from './stores/user'
 import { getCurrentUser } from './api/auth'
 import { getTodayMedication, takeMedication } from './api/medication'
 import { getPendingEmergencies } from './api/emergency'
 import { useFamilyStore } from './stores/family'
+import { useVideoCallStore } from './stores/videoCall'
+import { acceptCall as acceptCallApi, endCall } from './api/videoCall'
+import { speak, stopSpeaking } from './utils/speech'
 
 const router = useRouter()
 const userStore = useUserStore()
 const familyStore = useFamilyStore()
+const videoCallStore = useVideoCallStore()
 
 const showMedAlert = ref(false)
 const medAlertItem = ref<any>(null)
+const seenMedKeys = ref<string[]>([])
 
 const showEmergencyAlert = ref(false)
 const emergencyAlertItem = ref<any>(null)
 const seenEmergencyIds = ref<number[]>([])
+
+let greeted = false
 
 async function checkMedication() {
   if (!userStore.userInfo?.id || userStore.userInfo.role !== 'elder') return
@@ -99,9 +141,12 @@ async function checkMedication() {
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
     for (const item of res) {
-      if (item.status !== 'taken' && item.scheduled_time === timeStr && !showMedAlert.value) {
+      const key = `${item.plan_id}-${item.scheduled_time}`
+      if (item.status !== 'taken' && item.scheduled_time === timeStr && !showMedAlert.value && !seenMedKeys.value.includes(key)) {
         medAlertItem.value = item
         showMedAlert.value = true
+        seenMedKeys.value.push(key)
+        speak(`该吃${item.medication_name}了，${item.dosage}，${item.frequency || '请遵医嘱'}`)
         break
       }
     }
@@ -178,6 +223,45 @@ function getEmergencyName(type: string) {
   return names[type] || type
 }
 
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 6) return '夜深了，注意休息'
+  if (hour < 12) return '早上好'
+  if (hour < 14) return '中午好'
+  if (hour < 18) return '下午好'
+  return '晚上好'
+}
+
+function acceptCall() {
+  stopSpeaking()
+  const call = videoCallStore.incomingCall
+  if (!call) return
+
+  acceptCallApi(call.id).catch(() => {})
+
+  const name = call.caller_name || '家人'
+  const path = userStore.userInfo?.role === 'elder' ? '/elder/video-call' : '/child/video-call'
+
+  videoCallStore.clearIncoming()
+  router.push({
+    path,
+    query: {
+      incoming: 'true',
+      call_id: call.id,
+      name
+    }
+  })
+}
+
+function rejectCall() {
+  stopSpeaking()
+  const call = videoCallStore.incomingCall
+  if (call) {
+    endCall(call.id).catch(() => {})
+  }
+  videoCallStore.clearIncoming()
+}
+
 let timer: ReturnType<typeof setInterval> | null = null
 
 onMounted(async () => {
@@ -200,8 +284,28 @@ onMounted(async () => {
   }, 2000)
 })
 
+watch(
+  () => userStore.userInfo,
+  (userInfo) => {
+    if (!userInfo) return
+    if (userInfo.role === 'elder') {
+      videoCallStore.startPolling('elder')
+      if (!greeted) {
+        greeted = true
+        setTimeout(() => {
+          speak(`${getGreeting()}，${userInfo.username || '老人家'}，欢迎回来`)
+        }, 800)
+      }
+    } else if (userInfo.role === 'child') {
+      videoCallStore.startPolling('child')
+    }
+  },
+  { immediate: true }
+)
+
 onUnmounted(() => {
   if (timer) clearInterval(timer)
+  videoCallStore.stopPolling()
 })
 </script>
 
