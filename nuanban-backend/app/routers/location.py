@@ -6,17 +6,28 @@ from app.models.user import User
 from app.models.location import LocationRecord
 from app.schemas.location import LocationCreate, LocationResponse
 from app.dependencies import get_current_user
+from app.utils.amap import regeo_code
 
 router = APIRouter(prefix="/api/location", tags=["位置管理"])
 
+_location_cache = {}
+
 
 @router.post("/report", response_model=LocationResponse)
-def report_location(
+async def report_location(
     data: LocationCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    record = LocationRecord(**data.model_dump())
+    cache_key = f"{data.elder_user_id}_{round(data.latitude, 4)}_{round(data.longitude, 4)}"
+    address = _location_cache.get(cache_key)
+    
+    if not address:
+        address = await regeo_code(data.latitude, data.longitude)
+        if address:
+            _location_cache[cache_key] = address
+    
+    record = LocationRecord(**data.model_dump(exclude={"address"}), address=address or data.address)
     db.add(record)
     db.commit()
     db.refresh(record)

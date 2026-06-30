@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7天
 
+    # 高德地图
+    AMAP_KEY: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = True
