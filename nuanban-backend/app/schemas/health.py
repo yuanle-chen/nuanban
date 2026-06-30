@@ -26,4 +26,8 @@ class HealthSummary(BaseModel):
     latest_blood_sugar: Optional[str] = None
     latest_weight: Optional[str] = None
     latest_sleep: Optional[str] = None
+    blood_pressure_status: Optional[str] = None
+    heart_rate_status: Optional[str] = None
+    blood_sugar_status: Optional[str] = None
+    sleep_status: Optional[str] = None
     status: str = "正常"

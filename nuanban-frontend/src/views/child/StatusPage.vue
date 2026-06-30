@@ -161,24 +161,29 @@
       <div class="bg-white rounded-2xl shadow-md overflow-hidden">
         <div class="p-4 border-b border-gray-100 flex items-center justify-between">
           <h2 class="text-lg font-semibold text-gray-800">位置信息</h2>
-          <span class="text-sm text-green-500 flex items-center gap-1">
+          <span v-if="locationData" class="text-sm text-green-500 flex items-center gap-1">
             <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            在家中
+            {{ formatLocationTime(locationData.created_at) }}
           </span>
+          <span v-else class="text-sm text-gray-400">暂无位置</span>
         </div>
-        <div class="p-4">
-          <div class="flex items-center gap-3">
-            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-2xl">
+        <div v-if="locationData" class="p-4">
+          <div class="flex items-start gap-3">
+            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-2xl flex-shrink-0">
               📍
             </div>
-            <div>
-              <p class="font-medium text-gray-800">当前位置</p>
-              <p class="text-sm text-gray-500">{{ elderProfile?.address || '暂无位置信息' }}</p>
+            <div class="flex-1">
+              <p class="font-bold text-gray-800 text-base">{{ locationAddress }}</p>
+              <p class="text-xs text-gray-400 mt-2">
+                经度 {{ locationData.longitude?.toFixed(6) }} · 纬度 {{ locationData.latitude?.toFixed(6) }}
+              </p>
             </div>
           </div>
-          <div class="mt-3 p-3 bg-gray-50 rounded-xl text-center text-gray-400 text-sm">
-            位置功能需要在手机端开启定位服务
-          </div>
+        </div>
+        <div v-else class="p-6 text-center text-gray-400">
+          <p class="text-3xl mb-2">📍</p>
+          <p class="text-sm">暂无位置信息</p>
+          <p class="text-xs mt-1">位置功能需要在手机端开启定位服务</p>
         </div>
       </div>
     </div>
@@ -216,13 +221,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFamilyStore } from '../../stores/family'
 import { getHealthSummary } from '../../api/health'
 import { getTodayMedication } from '../../api/medication'
 import { getPendingEmergencies } from '../../api/emergency'
 import { getElderAlerts, getElderProfile } from '../../api/family'
+import { getLatestLocation } from '../../api/location'
 
 const router = useRouter()
 const familyStore = useFamilyStore()
@@ -244,6 +250,9 @@ const medications = ref<any[]>([])
 const emergencies = ref<any[]>([])
 const abnormalAlerts = ref<any[]>([])
 const elderProfile = ref<any>(null)
+const locationData = ref<any>(null)
+
+let syncTimer: ReturnType<typeof setInterval> | null = null
 
 const elderName = computed(() => {
   const elder = familyStore.currentElder
@@ -261,6 +270,12 @@ const lastUpdateTime = computed(() => {
 })
 
 const hasEmergency = computed(() => emergencies.value.length > 0)
+
+const locationAddress = computed(() => {
+  if (!locationData.value) return ''
+  if (locationData.value.address) return locationData.value.address
+  return `(${locationData.value.latitude?.toFixed(4)}, ${locationData.value.longitude?.toFixed(4)})`
+})
 
 const medicationProgress = computed(() => {
   const total = medications.value.length
@@ -283,16 +298,27 @@ function getAlertBgClass(type: string) {
   return type === 'medication' ? 'bg-orange-100' : 'bg-blue-100'
 }
 
+function formatLocationTime(time: string) {
+  const d = new Date(time)
+  const now = new Date()
+  const diff = Math.floor((now.getTime() - d.getTime()) / 1000)
+  if (diff < 60) return '刚刚'
+  if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`
+  return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
 async function loadData() {
   if (!elderId.value) return
 
   try {
-    const [healthRes, medRes, emergencyRes, alertsRes, profileRes] = await Promise.all([
+    const [healthRes, medRes, emergencyRes, alertsRes, profileRes, locationRes] = await Promise.all([
       getHealthSummary(elderId.value),
       getTodayMedication(elderId.value),
       getPendingEmergencies(),
       getElderAlerts(elderId.value),
-      getElderProfile(elderId.value)
+      getElderProfile(elderId.value),
+      getLatestLocation(elderId.value)
     ])
 
     // 健康数据
@@ -322,6 +348,9 @@ async function loadData() {
 
     // 老人档案
     elderProfile.value = profileRes
+
+    // 位置数据
+    locationData.value = locationRes || null
   } catch (error) {
     console.error('加载状态数据失败', error)
   }
@@ -332,5 +361,15 @@ onMounted(async () => {
     await familyStore.fetchElders()
   }
   loadData()
+  
+  syncTimer = setInterval(() => {
+    loadData()
+  }, 30000)
+})
+
+onUnmounted(() => {
+  if (syncTimer) {
+    clearInterval(syncTimer)
+  }
 })
 </script>

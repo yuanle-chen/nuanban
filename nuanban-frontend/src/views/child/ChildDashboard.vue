@@ -18,21 +18,27 @@
       <div class="bg-white rounded-2xl p-5 shadow-md">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-gray-800">{{ elderName }}</h2>
-          <span class="text-green-500 text-sm font-medium flex items-center gap-1">
-            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            在家中
+          <span :class="['text-sm font-medium flex items-center gap-1', latestLocation ? 'text-green-500' : 'text-gray-400']">
+            <span v-if="latestLocation" class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            {{ locationText }}
           </span>
         </div>
         <div class="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p class="text-2xl font-bold text-green-500">{{ healthSummary.latest_blood_pressure || '--' }}</p>
+          <div :class="['rounded-xl p-3', healthSummary.blood_pressure_status === 'abnormal' ? 'bg-red-50' : 'bg-green-50']">
+            <p :class="['text-2xl font-bold', healthSummary.blood_pressure_status === 'abnormal' ? 'text-red-500' : 'text-green-500']">
+              {{ healthSummary.latest_blood_pressure || '--' }}
+            </p>
             <p class="text-xs text-gray-500 mt-1">血压</p>
+            <span v-if="healthSummary.blood_pressure_status === 'abnormal'" class="inline-block mt-1 px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-xs">异常</span>
           </div>
-          <div>
-            <p class="text-2xl font-bold text-blue-500">{{ healthSummary.latest_heart_rate || '--' }}</p>
+          <div :class="['rounded-xl p-3', healthSummary.heart_rate_status === 'abnormal' ? 'bg-red-50' : 'bg-blue-50']">
+            <p :class="['text-2xl font-bold', healthSummary.heart_rate_status === 'abnormal' ? 'text-red-500' : 'text-blue-500']">
+              {{ healthSummary.latest_heart_rate || '--' }}
+            </p>
             <p class="text-xs text-gray-500 mt-1">心率</p>
+            <span v-if="healthSummary.heart_rate_status === 'abnormal'" class="inline-block mt-1 px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-xs">异常</span>
           </div>
-          <div>
+          <div class="rounded-xl p-3 bg-orange-50">
             <p class="text-2xl font-bold text-orange-500">{{ medicationProgress }}</p>
             <p class="text-xs text-gray-500 mt-1">用药情况</p>
           </div>
@@ -114,6 +120,7 @@ import { getElderAlerts } from '../../api/family'
 import { getHealthSummary } from '../../api/health'
 import { getTodayMedication } from '../../api/medication'
 import { getPendingCalls } from '../../api/videoCall'
+import { getLatestLocation } from '../../api/location'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -122,6 +129,7 @@ const familyStore = useFamilyStore()
 const alerts = ref<any[]>([])
 const healthSummary = ref<any>({})
 const medicationToday = ref<any[]>([])
+const latestLocation = ref<any>(null)
 
 const elderName = computed(() => {
   const elder = familyStore.currentElder
@@ -135,6 +143,12 @@ const medicationProgress = computed(() => {
   const total = medicationToday.value.length
   const taken = medicationToday.value.filter((m: any) => m.status === 'taken').length
   return total > 0 ? `${taken}/${total}` : '--'
+})
+
+const locationText = computed(() => {
+  if (!latestLocation.value) return '位置未知'
+  if (latestLocation.value.address) return latestLocation.value.address
+  return `(${latestLocation.value.latitude?.toFixed(4)}, ${latestLocation.value.longitude?.toFixed(4)})`
 })
 
 const features = [
@@ -166,14 +180,16 @@ function getAlertBgClass(type: string) {
 async function loadData() {
   if (!elderId.value) return
   try {
-    const [alertsRes, healthRes, medRes] = await Promise.all([
+    const [alertsRes, healthRes, medRes, locationRes] = await Promise.all([
       getElderAlerts(elderId.value),
       getHealthSummary(elderId.value),
-      getTodayMedication(elderId.value)
+      getTodayMedication(elderId.value),
+      getLatestLocation(elderId.value)
     ])
     alerts.value = alertsRes
     healthSummary.value = healthRes
     medicationToday.value = medRes
+    latestLocation.value = locationRes || null
   } catch (error) {
     console.error('加载数据失败', error)
   }

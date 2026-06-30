@@ -116,6 +116,7 @@ import { useFamilyStore } from './stores/family'
 import { useVideoCallStore } from './stores/videoCall'
 import { acceptCall as acceptCallApi, endCall } from './api/videoCall'
 import { speak, stopSpeaking } from './utils/speech'
+import { reportLocation } from './api/location'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -129,8 +130,6 @@ const seenMedKeys = ref<string[]>([])
 const showEmergencyAlert = ref(false)
 const emergencyAlertItem = ref<any>(null)
 const seenEmergencyIds = ref<number[]>([])
-
-let greeted = false
 
 async function checkMedication() {
   if (!userStore.userInfo?.id || userStore.userInfo.role !== 'elder') return
@@ -223,15 +222,6 @@ function getEmergencyName(type: string) {
   return names[type] || type
 }
 
-function getGreeting() {
-  const hour = new Date().getHours()
-  if (hour < 6) return '夜深了，注意休息'
-  if (hour < 12) return '早上好'
-  if (hour < 14) return '中午好'
-  if (hour < 18) return '下午好'
-  return '晚上好'
-}
-
 function acceptCall() {
   stopSpeaking()
   const call = videoCallStore.incomingCall
@@ -263,6 +253,38 @@ function rejectCall() {
 }
 
 let timer: ReturnType<typeof setInterval> | null = null
+let locationTimer: ReturnType<typeof setInterval> | null = null
+
+async function uploadLocation() {
+  if (!userStore.userInfo?.id || userStore.userInfo.role !== 'elder') return
+  
+  if (!navigator.geolocation) {
+    console.warn('浏览器不支持定位功能')
+    return
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      try {
+        await reportLocation(
+          userStore.userInfo!.id,
+          position.coords.latitude,
+          position.coords.longitude
+        )
+      } catch (error) {
+        console.error('位置上报失败', error)
+      }
+    },
+    (error) => {
+      console.warn('获取位置失败', error.message)
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
+  )
+}
 
 onMounted(async () => {
   if (userStore.token && !userStore.userInfo) {
@@ -282,6 +304,14 @@ onMounted(async () => {
   setTimeout(() => {
     checkEmergency()
   }, 2000)
+
+  locationTimer = setInterval(() => {
+    uploadLocation()
+  }, 60000)
+
+  setTimeout(() => {
+    uploadLocation()
+  }, 3000)
 })
 
 watch(
@@ -290,12 +320,6 @@ watch(
     if (!userInfo) return
     if (userInfo.role === 'elder') {
       videoCallStore.startPolling('elder')
-      if (!greeted) {
-        greeted = true
-        setTimeout(() => {
-          speak(`${getGreeting()}，${userInfo.username || '老人家'}，欢迎回来`)
-        }, 800)
-      }
     } else if (userInfo.role === 'child') {
       videoCallStore.startPolling('child')
     }
@@ -305,6 +329,7 @@ watch(
 
 onUnmounted(() => {
   if (timer) clearInterval(timer)
+  if (locationTimer) clearInterval(locationTimer)
   videoCallStore.stopPolling()
 })
 </script>

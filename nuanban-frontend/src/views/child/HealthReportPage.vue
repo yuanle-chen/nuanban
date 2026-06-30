@@ -138,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useFamilyStore } from '../../stores/family'
 import { getHealthRecords, getHealthSummary } from '../../api/health'
 
@@ -155,6 +155,8 @@ const elderName = computed(() => {
 })
 
 const elderId = computed(() => familyStore.currentElder?.id)
+
+let syncTimer: ReturnType<typeof setInterval> | null = null
 
 const recordTypes = [
   { key: 'blood_pressure', name: '血压', icon: '🩺' },
@@ -262,5 +264,16 @@ onMounted(async () => {
   }
   loadSummary()
   loadRecords()
+  
+  syncTimer = setInterval(() => {
+    loadSummary()
+    loadRecords()
+  }, 30000)
+})
+
+onUnmounted(() => {
+  if (syncTimer) {
+    clearInterval(syncTimer)
+  }
 })
 </script>

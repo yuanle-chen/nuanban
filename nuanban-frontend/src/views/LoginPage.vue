@@ -67,6 +67,7 @@ import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { login, getCurrentUser } from '../api/auth'
+import { speak } from '../utils/speech'
 
 const router = useRouter()
 const route = useRoute()
@@ -106,6 +107,15 @@ async function handleLogin() {
     
     if (role.value === 'elder') {
       router.push('/elder')
+      setTimeout(() => {
+        const hour = new Date().getHours()
+        let greeting = '晚上好'
+        if (hour < 6) greeting = '夜深了，注意休息'
+        else if (hour < 12) greeting = '早上好'
+        else if (hour < 14) greeting = '中午好'
+        else if (hour < 18) greeting = '下午好'
+        speak(`${greeting}，${userRes.username || '老人家'}，欢迎回来`)
+      }, 500)
     } else {
       router.push('/child')
     }

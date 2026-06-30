@@ -72,6 +72,9 @@ def get_health_summary(
                     low = int(parts[1])
                     if high < 90 or high > 140 or low < 60 or low > 90:
                         is_abnormal = True
+                        summary.blood_pressure_status = "abnormal"
+                    else:
+                        summary.blood_pressure_status = "normal"
                 except:
                     pass
             elif t == "heart_rate":
@@ -80,6 +83,9 @@ def get_health_summary(
                     rate = int(latest.value)
                     if rate < 60 or rate > 100:
                         is_abnormal = True
+                        summary.heart_rate_status = "abnormal"
+                    else:
+                        summary.heart_rate_status = "normal"
                 except:
                     pass
             elif t == "blood_sugar":
@@ -88,6 +94,9 @@ def get_health_summary(
                     sugar = float(latest.value)
                     if sugar < 3.9 or sugar > 6.1:
                         is_abnormal = True
+                        summary.blood_sugar_status = "abnormal"
+                    else:
+                        summary.blood_sugar_status = "normal"
                 except:
                     pass
             elif t == "weight":
@@ -98,6 +107,9 @@ def get_health_summary(
                     hours = float(latest.value)
                     if hours < 6 or hours > 10:
                         is_abnormal = True
+                        summary.sleep_status = "abnormal"
+                    else:
+                        summary.sleep_status = "normal"
                 except:
                     pass
 
