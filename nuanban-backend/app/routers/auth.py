@@ -79,3 +79,11 @@ def change_password(
     db.commit()
 
     return {"message": "密码修改成功"}
+
+
+@router.post("/refresh", response_model=Token)
+def refresh_token(current_user: User = Depends(get_current_user)):
+    access_token = create_access_token(
+        data={"sub": current_user.username, "user_id": current_user.id, "role": current_user.role}
+    )
+    return {"access_token": access_token, "token_type": "bearer", "role": current_user.role}
