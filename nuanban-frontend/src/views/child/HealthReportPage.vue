@@ -83,6 +83,43 @@
       </div>
     </div>
 
+    <!-- 趋势图表 -->
+    <div class="px-4 mt-6">
+      <div class="bg-white rounded-2xl p-6 shadow-md">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-800">健康趋势</h3>
+          <div class="flex gap-2">
+            <button
+              v-for="item in chartTypes"
+              :key="item.key"
+              @click="activeChart = item.key"
+              :class="[
+                'px-3 py-1 rounded-full text-sm transition-all',
+                activeChart === item.key ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'
+              ]"
+            >
+              {{ item.name }}
+            </button>
+          </div>
+        </div>
+        <div ref="chartRef" class="w-full h-64"></div>
+        <div class="mt-4 grid grid-cols-3 gap-3 text-center text-sm">
+          <div class="p-3 bg-green-50 rounded-xl">
+            <p class="text-gray-500">最高值</p>
+            <p class="font-bold text-green-600 text-lg">{{ chartStats.max }}</p>
+          </div>
+          <div class="p-3 bg-blue-50 rounded-xl">
+            <p class="text-gray-500">最低值</p>
+            <p class="font-bold text-blue-600 text-lg">{{ chartStats.min }}</p>
+          </div>
+          <div class="p-3 bg-orange-50 rounded-xl">
+            <p class="text-gray-500">平均值</p>
+            <p class="font-bold text-orange-600 text-lg">{{ chartStats.avg }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 历史记录 -->
     <div class="px-4 mt-6">
       <div class="bg-white rounded-2xl p-6 shadow-md">
@@ -138,15 +175,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useFamilyStore } from '../../stores/family'
 import { getHealthRecords, getHealthSummary } from '../../api/health'
+import * as echarts from 'echarts'
 
 const familyStore = useFamilyStore()
 
 const filterType = ref('')
 const summary = ref<any>({ status: '正常' })
 const records = ref<any[]>([])
+const chartRef = ref<HTMLElement | null>(null)
+let chartInstance: echarts.ECharts | null = null
+const activeChart = ref('heart_rate')
+const chartData = ref<any[]>([])
+
+const chartTypes = [
+  { key: 'blood_pressure', name: '血压', unit: 'mmHg' },
+  { key: 'heart_rate', name: '心率', unit: '次/分' },
+  { key: 'blood_sugar', name: '血糖', unit: 'mmol/L' },
+  { key: 'weight', name: '体重', unit: 'kg' },
+  { key: 'sleep', name: '睡眠', unit: '小时' },
+]
 
 const elderName = computed(() => {
   const elder = familyStore.currentElder
@@ -155,6 +205,24 @@ const elderName = computed(() => {
 })
 
 const elderId = computed(() => familyStore.currentElder?.id)
+
+const currentChartType = computed(() => {
+  return chartTypes.find(c => c.key === activeChart.value) || chartTypes[1]
+})
+
+const chartStats = computed(() => {
+  const data = chartData.value
+  if (data.length === 0) return { max: '--', min: '--', avg: '--' }
+  
+  const values = data.map((d: any) => d.value).filter(v => v !== null && v !== undefined)
+  if (values.length === 0) return { max: '--', min: '--', avg: '--' }
+  
+  const max = Math.max(...values)
+  const min = Math.min(...values)
+  const avg = (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1)
+  
+  return { max, min, avg }
+})
 
 let syncTimer: ReturnType<typeof setInterval> | null = null
 
@@ -258,6 +326,114 @@ async function loadRecords() {
   }
 }
 
+async function loadChartData() {
+  if (!elderId.value) return
+  try {
+    const res: any = await getHealthRecords(elderId.value, activeChart.value, 30)
+    const sorted = [...res].reverse()
+    
+    chartData.value = sorted.map((item: any) => {
+      let value = null
+      if (activeChart.value === 'blood_pressure') {
+        const parts = item.value.split('/')
+        value = parseFloat(parts[0])
+      } else {
+        value = parseFloat(item.value)
+      }
+      return {
+        date: item.recorded_at,
+        value: isNaN(value) ? null : value
+      }
+    })
+    
+    updateChart()
+  } catch (error) {
+    console.error('加载图表数据失败', error)
+  }
+}
+
+function initChart() {
+  if (!chartRef.value) return
+  chartInstance = echarts.init(chartRef.value)
+  updateChart()
+}
+
+function updateChart() {
+  if (!chartInstance) return
+  
+  const dates = chartData.value.map((d: any) => {
+    const date = new Date(d.date)
+    return `${date.getMonth() + 1}/${date.getDate()}`
+  })
+  const values = chartData.value.map((d: any) => d.value)
+  
+  const color = activeChart.value === 'blood_pressure' ? '#ef4444' :
+                activeChart.value === 'heart_rate' ? '#3b82f6' :
+                activeChart.value === 'blood_sugar' ? '#f59e0b' :
+                activeChart.value === 'weight' ? '#8b5cf6' : '#06b6d4'
+  
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params: any) => {
+        const p = params[0]
+        return `${p.name}<br/>${currentChartType.value.name}: ${p.value || '--'} ${currentChartType.value.unit}`
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      top: '10%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: dates,
+      axisLine: { lineStyle: { color: '#e5e7eb' } },
+      axisLabel: { color: '#9ca3af', fontSize: 10 }
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { lineStyle: { color: '#f3f4f6' } },
+      axisLabel: { color: '#9ca3af', fontSize: 10 }
+    },
+    series: [
+      {
+        data: values,
+        type: 'line',
+        smooth: true,
+        lineStyle: { color, width: 2 },
+        itemStyle: { color },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: color + '40' },
+              { offset: 1, color: color + '05' }
+            ]
+          }
+        },
+        symbol: 'circle',
+        symbolSize: 6
+      }
+    ]
+  }
+  
+  chartInstance.setOption(option)
+}
+
+function handleResize() {
+  chartInstance?.resize()
+}
+
+watch(activeChart, () => {
+  loadChartData()
+})
+
 onMounted(async () => {
   if (!familyStore.currentElder) {
     await familyStore.fetchElders()
@@ -265,13 +441,25 @@ onMounted(async () => {
   loadSummary()
   loadRecords()
   
+  await nextTick()
+  initChart()
+  loadChartData()
+  
+  window.addEventListener('resize', handleResize)
+  
   syncTimer = setInterval(() => {
     loadSummary()
     loadRecords()
+    loadChartData()
   }, 30000)
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  if (chartInstance) {
+    chartInstance.dispose()
+    chartInstance = null
+  }
   if (syncTimer) {
     clearInterval(syncTimer)
   }
