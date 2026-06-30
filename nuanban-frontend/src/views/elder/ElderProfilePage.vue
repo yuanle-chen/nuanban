@@ -245,9 +245,8 @@ async function handleChangePassword() {
 
 function handleLogout() {
   if (confirm('确定要退出登录吗？')) {
-    localStorage.removeItem('token')
-    localStorage.removeItem('userInfo')
-    router.push('/login')
+    userStore.logout()
+    router.push({ path: '/login', query: { role: 'elder' } })
   }
 }
 

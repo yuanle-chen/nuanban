@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 flex flex-col items-center justify-center p-6">
     <div class="w-full max-w-sm">
       <!-- 返回 -->
-      <button @click="$router.back()" class="mb-6 text-gray-500 hover:text-gray-700 flex items-center gap-1">
+      <button @click="goBack" class="mb-6 text-gray-500 hover:text-gray-700 flex items-center gap-1">
         ← 返回
       </button>
 
@@ -132,5 +132,9 @@ function goToRegister() {
 
 function goToForgotPassword() {
   router.push('/forgot-password')
+}
+
+function goBack() {
+  router.push('/')
 }
 </script>

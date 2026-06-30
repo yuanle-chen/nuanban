@@ -343,7 +343,7 @@ function handleLogout() {
   if (confirm('确定要退出登录吗？')) {
     userStore.logout()
     familyStore.$reset()
-    router.push('/login')
+    router.push({ path: '/login', query: { role: 'child' } })
   }
 }
 
